@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { CorkboardLayout, CreateLoreDocument, CreateManuscriptContainer, CreateScene, CreateSceneVariant, CreateTimelineEvent, CreateStateTransition, CreateRelationship, CreateRelationshipType, ContinuityWarning, GlobalSearchResult, LoreDocument, LorePropertyPatch, LoreReference, LoreRenamePreview, LoreSearchFilters, LoreSearchResult, LoreTreeNode, ManuscriptExportFormat, ManuscriptExportResult, ManuscriptNode, RecentWorkspace, Relationship, RelationshipGraph, RelationshipGraphPosition, RelationshipGraphView, SceneDocument, SceneMetadataPatch, SceneSnapshot, SceneVariant, TimelineConfig, TimelineEvent, TimelineEventPatch, TimelineTrack, StateTransition, WorkspaceChange, WorkspaceRescan, WorkspaceSummary } from '../shared/workspace'
+import type { CorkboardLayout, CreateLoreDocument, CreateManuscriptContainer, RenameManuscriptItem, CreateScene, CreateSceneVariant, CreateTimelineEvent, CreateStateTransition, CreateRelationship, CreateRelationshipType, ContinuityWarning, GlobalSearchResult, LoreDocument, LorePropertyPatch, LoreReference, LoreRenamePreview, LoreSearchFilters, LoreSearchResult, LoreTreeNode, ManuscriptExportFormat, ManuscriptExportResult, ManuscriptNode, RecentWorkspace, Relationship, RelationshipGraph, RelationshipGraphPosition, RelationshipGraphView, SceneDocument, SceneMetadataPatch, SceneSnapshot, SceneVariant, TimelineConfig, TimelineEvent, TimelineEventPatch, TimelineTrack, StateTransition, WorkspaceChange, WorkspaceRescan, WorkspaceSummary } from '../shared/workspace'
 
 const worldvilla = {
   lore: {
@@ -26,6 +26,7 @@ const worldvilla = {
     corkboardLayout: (): Promise<CorkboardLayout> => ipcRenderer.invoke('manuscript:corkboard-layout'),
     saveCorkboardLayout: (layout: CorkboardLayout): Promise<CorkboardLayout> => ipcRenderer.invoke('manuscript:save-corkboard-layout', layout),
     createContainer: (input: CreateManuscriptContainer): Promise<ManuscriptNode[]> => ipcRenderer.invoke('manuscript:create-container', input),
+    renameItem: (input: RenameManuscriptItem): Promise<string> => ipcRenderer.invoke('manuscript:rename-item', input),
     createScene: (input: CreateScene): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:create-scene', input),
     readScene: (scenePath: string): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:read-scene', scenePath),
     saveScene: (scenePath: string, content: string): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:save-scene', scenePath, content),
@@ -33,6 +34,7 @@ const worldvilla = {
     listSceneVariants: (scenePath: string): Promise<SceneVariant[]> => ipcRenderer.invoke('manuscript:list-scene-variants', scenePath),
     readSceneVariant: (scenePath: string, variantId: string): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:read-scene-variant', scenePath, variantId),
     createSceneVariant: (scenePath: string, input: CreateSceneVariant): Promise<SceneVariant[]> => ipcRenderer.invoke('manuscript:create-scene-variant', scenePath, input),
+    renameSceneVariant: (scenePath: string, variantId: string, name: string): Promise<SceneVariant[]> => ipcRenderer.invoke('manuscript:rename-scene-variant', scenePath, variantId, name),
     saveSceneVariant: (scenePath: string, variantId: string, content: string): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:save-scene-variant', scenePath, variantId, content),
     updateSceneVariantMetadata: (scenePath: string, variantId: string, patch: SceneMetadataPatch, content?: string): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:update-scene-variant-metadata', scenePath, variantId, patch, content),
     setPreferredSceneVariant: (scenePath: string, variantId: string): Promise<SceneDocument> => ipcRenderer.invoke('manuscript:set-preferred-scene-variant', scenePath, variantId),

@@ -136,6 +136,11 @@ export type CreateManuscriptContainer = {
   kind: Exclude<ManuscriptNodeKind, 'scene'>
 }
 
+export type RenameManuscriptItem = {
+  path: string
+  title: string
+}
+
 export type ManuscriptExportFormat = 'markdown' | 'html' | 'docx'
 
 export type ManuscriptExportResult = {

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import path from 'node:path'
 import { WorkspaceService } from './workspace-service'
-import type { CorkboardLayout, CreateLoreDocument, ManuscriptExportFormat, CreateManuscriptContainer, CreateScene, CreateSceneVariant, LorePropertyPatch, LoreSearchFilters, SceneMetadataPatch, TimelineConfig, CreateTimelineEvent, TimelineEventPatch, CreateStateTransition, CreateRelationship, CreateRelationshipType, RelationshipGraphPosition } from '../shared/workspace'
+import type { CorkboardLayout, CreateLoreDocument, ManuscriptExportFormat, CreateManuscriptContainer, RenameManuscriptItem, CreateScene, CreateSceneVariant, LorePropertyPatch, LoreSearchFilters, SceneMetadataPatch, TimelineConfig, CreateTimelineEvent, TimelineEventPatch, CreateStateTransition, CreateRelationship, CreateRelationshipType, RelationshipGraphPosition } from '../shared/workspace'
 
 let mainWindow: BrowserWindow | null = null
 const workspaceService = new WorkspaceService((change) => {
@@ -103,6 +103,7 @@ app.whenReady().then(() => {
   ipcMain.handle('manuscript:corkboard-layout', () => workspaceService.corkboardLayout())
   ipcMain.handle('manuscript:save-corkboard-layout', (_event, layout: CorkboardLayout) => workspaceService.saveCorkboardLayout(layout))
   ipcMain.handle('manuscript:create-container', (_event, input: CreateManuscriptContainer) => workspaceService.createManuscriptContainer(input))
+  ipcMain.handle('manuscript:rename-item', (_event, input: RenameManuscriptItem) => workspaceService.renameManuscriptItem(input))
   ipcMain.handle('manuscript:create-scene', (_event, input: CreateScene) => workspaceService.createScene(input))
   ipcMain.handle('manuscript:read-scene', (_event, scenePath: string) => workspaceService.readScene(scenePath))
   ipcMain.handle('manuscript:save-scene', (_event, scenePath: string, content: string) => workspaceService.saveScene(scenePath, content))
@@ -110,6 +111,7 @@ app.whenReady().then(() => {
   ipcMain.handle('manuscript:list-scene-variants', (_event, scenePath: string) => workspaceService.listSceneVariants(scenePath))
   ipcMain.handle('manuscript:read-scene-variant', (_event, scenePath: string, variantId: string) => workspaceService.readSceneVariant(scenePath, variantId))
   ipcMain.handle('manuscript:create-scene-variant', (_event, scenePath: string, input: CreateSceneVariant) => workspaceService.createSceneVariant(scenePath, input))
+  ipcMain.handle('manuscript:rename-scene-variant', (_event, scenePath: string, variantId: string, name: string) => workspaceService.renameSceneVariant(scenePath, variantId, name))
   ipcMain.handle('manuscript:save-scene-variant', (_event, scenePath: string, variantId: string, content: string) => workspaceService.saveSceneVariant(scenePath, variantId, content))
   ipcMain.handle('manuscript:update-scene-variant-metadata', (_event, scenePath: string, variantId: string, patch: SceneMetadataPatch, content?: string) => workspaceService.updateSceneVariantMetadata(scenePath, variantId, patch, content))
   ipcMain.handle('manuscript:set-preferred-scene-variant', (_event, scenePath: string, variantId: string) => workspaceService.setPreferredSceneVariant(scenePath, variantId))

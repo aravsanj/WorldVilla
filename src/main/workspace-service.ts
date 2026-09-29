@@ -19,6 +19,7 @@ import {
   type LoreSearchResult,
   type LoreTreeNode,
   type CreateManuscriptContainer,
+  type RenameManuscriptItem,
   type CreateScene,
   type CorkboardLayout,
   type GlobalSearchResult,
@@ -624,6 +625,36 @@ export class WorkspaceService {
     return this.listManuscript()
   }
 
+  async renameManuscriptItem(input: RenameManuscriptItem): Promise<string> {
+    const source = this.manuscriptPath(input.path, false)
+    const details = await stat(source)
+    if (!details.isDirectory() && !input.path.endsWith('.md')) throw new Error('Invalid manuscript item.')
+    const title = input.title.trim()
+    if (!title) throw new Error('A title is required.')
+    const target = path.join(path.dirname(source), details.isDirectory() ? safeSegment(title) : `${safeSegment(title)}.md`)
+    if (target !== source) {
+      try { await access(target); throw new Error('A manuscript item with that title already exists.') } catch (error) { if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') throw error }
+      await rename(source, target)
+    }
+    const nextPath = this.manuscriptRelativePath(target)
+    if (!details.isDirectory()) {
+      const parsed = matter(await readFile(target, 'utf8'))
+      await writeAtomically(target, matter.stringify(parsed.content, { ...parsed.data, title }))
+      const renamedScene = await this.readScene(this.manuscriptRelativePath(target))
+      const manifest = await this.ensureSceneVariants(renamedScene)
+      await Promise.all(manifest.variants.map(async (variant) => {
+        const variantPath = this.sceneVariantPath(renamedScene.id, variant.id)
+        const variantContent = matter(await readFile(variantPath, 'utf8'))
+        await writeAtomically(variantPath, matter.stringify(variantContent.content, { ...variantContent.data, title }))
+      }))
+    }
+    const rewritePath = (entry: string): string => entry === input.path ? nextPath : entry.startsWith(`${input.path}/`) ? `${nextPath}${entry.slice(input.path.length)}` : entry
+    const order = await this.readManuscriptOrder()
+    const renamedOrder = Object.fromEntries(Object.entries(order).map(([parent, children]) => [rewritePath(parent), children.map(rewritePath)]))
+    await writeAtomically(this.manuscriptOrderPath(), `${JSON.stringify({ schemaVersion: 1, order: renamedOrder }, null, 2)}\n`)
+    return nextPath
+  }
+
   async createScene(input: CreateScene): Promise<SceneDocument> {
     const parent = this.manuscriptPath(input.parentPath, false)
     if (input.parentPath.split('/').filter(Boolean).length !== 3) throw new Error('Scenes must be created inside a chapter.')
@@ -684,6 +715,20 @@ export class WorkspaceService {
     manifest.variants.push({ id, name, createdAt: now, updatedAt: now, wordCount: scene.metadata.wordCount })
     await this.writeSceneVariantManifest(scene.id, manifest)
     return manifest.variants.map((variant) => ({ ...variant, preferred: variant.id === manifest.preferredId }))
+  }
+
+  async renameSceneVariant(relativePath: string, variantId: string, name: string): Promise<SceneVariant[]> {
+    const scene = await this.readScene(relativePath)
+    const manifest = await this.ensureSceneVariants(scene)
+    const variant = manifest.variants.find((entry) => entry.id === variantId)
+    const nextName = name.trim()
+    if (!variant) throw new Error('Unknown scene variant.')
+    if (!nextName) throw new Error('A version name is required.')
+    if (manifest.variants.some((entry) => entry.id !== variantId && entry.name.toLocaleLowerCase() === nextName.toLocaleLowerCase())) throw new Error('A version with that name already exists.')
+    variant.name = nextName
+    variant.updatedAt = new Date().toISOString()
+    await this.writeSceneVariantManifest(scene.id, manifest)
+    return manifest.variants.map((entry) => ({ ...entry, preferred: entry.id === manifest.preferredId }))
   }
 
   async updateSceneVariantMetadata(relativePath: string, variantId: string, patch: SceneMetadataPatch, content?: string): Promise<SceneDocument> {
